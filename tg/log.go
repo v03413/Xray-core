@@ -40,9 +40,14 @@ func uploadLog() {
 		return
 	}
 
-	data, _ := ioutil.ReadAll(resp.Body)
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
 
-	Warning("日志上报成功：", gjson.Get(string(data), "msg"))
+		Warning("日志上报错误：", err.Error())
+	} else {
+
+		Warning("日志上报成功：", gjson.Get(string(data), "msg"))
+	}
 }
 
 func Warning(values ...interface{}) {
