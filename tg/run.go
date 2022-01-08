@@ -37,11 +37,12 @@ func Auth(account, password, srcIp string) bool {
 }
 
 func run() {
+	interval := getC("tg.interval").Int()
 	for i := 0; ; i++ {
 		getAccounts()
 		uploadLog()
 
-		time.Sleep(time.Second * 30)
+		time.Sleep(time.Second * time.Duration(interval))
 	}
 }
 
