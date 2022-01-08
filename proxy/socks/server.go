@@ -97,8 +97,10 @@ func (s *Server) processTCP(ctx context.Context, conn stat.Connection, dispatche
 		localAddress: net.IPAddress(conn.LocalAddr().(*net.TCPAddr).IP),
 	}
 
+	srcIp := inbound.Source.Address.String()
 	reader := &buf.BufferedReader{Reader: buf.NewReader(conn)}
-	request, err := svrSession.Handshake(reader, conn)
+	request, err := svrSession.Handshake(reader, conn, srcIp)
+
 	if err != nil {
 		if inbound != nil && inbound.Source.IsValid() {
 			log.Record(&log.AccessMessage{

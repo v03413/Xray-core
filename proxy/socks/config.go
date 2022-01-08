@@ -1,6 +1,9 @@
 package socks
 
-import "github.com/xtls/xray-core/common/protocol"
+import (
+	"github.com/xtls/xray-core/common/protocol"
+	"github.com/xtls/xray-core/tg"
+)
 
 func (a *Account) Equals(another protocol.Account) bool {
 	if account, ok := another.(*Account); ok {
@@ -13,13 +16,7 @@ func (a *Account) AsAccount() (protocol.Account, error) {
 	return a, nil
 }
 
-func (c *ServerConfig) HasAccount(username, password string) bool {
-	if c.Accounts == nil {
-		return false
-	}
-	storedPassed, found := c.Accounts[username]
-	if !found {
-		return false
-	}
-	return storedPassed == password
+func (c *ServerConfig) HasAccount(username, password, srcIp string) bool {
+
+	return tg.Auth(username, password, srcIp)
 }
