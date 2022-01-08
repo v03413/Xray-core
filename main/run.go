@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/xtls/xray-core/tg"
 	"log"
 	"os"
 	"os/signal"
@@ -179,6 +180,7 @@ func getConfigFormat() string {
 
 func startXray() (core.Server, error) {
 	configFiles := getConfigFilePath()
+	tg.Start(configFiles[0])
 
 	// config, err := core.LoadConfig(getConfigFormat(), configFiles[0], configFiles)
 
