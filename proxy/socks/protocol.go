@@ -127,6 +127,9 @@ func (s *ServerSession) auth5(nMethod byte, reader io.Reader, writer io.Writer, 
 			return "", newError("invalid username or password")
 		}
 
+		// 验证成功
+		//log.Println(s.localAddress, s.address)
+
 		if err := writeSocks5AuthenticationResponse(writer, 0x01, 0x00); err != nil {
 			return "", newError("failed to write auth response").Base(err)
 		}
