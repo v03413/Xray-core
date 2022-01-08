@@ -27,3 +27,4 @@ errorgen
 !common/errors/errorgen/
 *.dat
 .vscode
+config.json
