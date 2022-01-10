@@ -2,7 +2,7 @@ package socks
 
 import (
 	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/tg"
+	"github.com/xtls/xray-core/extend"
 )
 
 func (a *Account) Equals(another protocol.Account) bool {
@@ -18,5 +18,5 @@ func (a *Account) AsAccount() (protocol.Account, error) {
 
 func (c *ServerConfig) HasAccount(username, password, srcIp string) bool {
 
-	return tg.Auth(username, password, srcIp)
+	return extend.Auth(username, password, srcIp)
 }
