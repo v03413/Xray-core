@@ -1,4 +1,4 @@
-package tg
+package extend
 
 import (
 	"github.com/tidwall/gjson"

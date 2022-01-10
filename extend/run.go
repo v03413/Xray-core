@@ -1,4 +1,4 @@
-package tg
+package extend
 
 import (
 	"fmt"
@@ -37,7 +37,12 @@ func Auth(account, password, srcIp string) bool {
 }
 
 func run() {
-	interval := getC("tg.interval").Int()
+	interval := getC("extend.interval").Int()
+	if interval == 0 {
+
+		interval = 30 // 默认三十秒
+	}
+
 	for i := 0; ; i++ {
 		getAccounts()
 		uploadLog()
@@ -47,7 +52,7 @@ func run() {
 }
 
 func getAccounts() {
-	var url = fmt.Sprintf("%sapi.php?act=get_user&token=%s&sid=%s", getC("tg.api"), getC("tg.key"), getC("tg.sid"))
+	var url = fmt.Sprintf("%sapi.php?act=get_user&token=%s&sid=%s", getC("extend.api"), getC("extend.key"), getC("extend.sid"))
 
 	resp, err := http.Get(url)
 	if err != nil {
