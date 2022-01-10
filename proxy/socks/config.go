@@ -2,6 +2,7 @@ package socks
 
 import (
 	"github.com/xtls/xray-core/common/protocol"
+	"github.com/xtls/xray-core/extend"
 )
 
 func (a *Account) Equals(another protocol.Account) bool {
