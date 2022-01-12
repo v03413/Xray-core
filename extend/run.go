@@ -25,14 +25,14 @@ func Start(configFile string) {
 	go run()
 }
 
-func Auth(account, password, srcIp, connId string) bool {
+func Auth(account, password, srcIp, cid string) bool {
 	storedPassed, found := accounts.Load(account)
 	if found && password == storedPassed {
 		// 记录上线日志
 		logs <- fmt.Sprintf("%s:%s", account, srcIp)
 
 		// 关联连接ID
-		CacheUuidOfUser.Add(connId, account, time.Minute*10)
+		CacheUuidOfUser.Add(cid, account, time.Minute*10)
 
 		return true
 	}
