@@ -25,6 +25,7 @@ func Start(configFile string) {
 	go run()
 }
 
+// Auth 账号授权验证
 func Auth(account, password, srcIp, cid string) bool {
 	storedPassed, found := accounts.Load(account)
 	if found && password == storedPassed {
@@ -40,6 +41,13 @@ func Auth(account, password, srcIp, cid string) bool {
 	return false
 }
 
+// IsExistAccount 账号是否存在
+func IsExistAccount(account string) bool {
+	_, found := accounts.Load(account)
+
+	return found
+}
+
 func run() {
 	var interval = getC("extend.interval").Int()
 	if interval == 0 {
@@ -50,6 +58,7 @@ func run() {
 	for i := 0; ; i++ {
 		getAccounts()
 		uploadLog()
+		CacheUuidOfUser.DeleteExpired()
 
 		time.Sleep(time.Second * time.Duration(interval))
 	}
