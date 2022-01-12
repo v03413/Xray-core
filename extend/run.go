@@ -2,6 +2,7 @@ package extend
 
 import (
 	"fmt"
+	"github.com/patrickmn/go-cache"
 	"github.com/tidwall/gjson"
 	"io"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 var accounts sync.Map
 var TrafficLogChan = make(chan string, 1000000)
+var CacheUuidOfUser = cache.New(10*time.Minute, 30*time.Minute) // 可能增加内存占用，不好控制
 
 func Start(configFile string) {
 	logs = make(chan string, 10240)
@@ -23,13 +25,14 @@ func Start(configFile string) {
 	go run()
 }
 
-func Auth(account, password, srcIp string) bool {
+func Auth(account, password, srcIp, connId string) bool {
 	storedPassed, found := accounts.Load(account)
 	if found && password == storedPassed {
-		// srcIp := inbound.Source.Address.String()
-
 		// 记录上线日志
 		logs <- fmt.Sprintf("%s:%s", account, srcIp)
+
+		// 关联连接ID
+		CacheUuidOfUser.Add(connId, account, time.Minute*10)
 
 		return true
 	}

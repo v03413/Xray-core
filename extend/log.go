@@ -16,8 +16,8 @@ func uploadLog() {
 	var result []string
 	var traffic []string
 
-	// 各IP流量统计
-	trafficMap := make(map[string]int)
+	// 各用户流量统计
+	trafficMap := make(map[interface{}]int)
 	for len(TrafficLogChan) > 0 {
 		tmp := strings.Split(<-TrafficLogChan, "|")
 		if tmp[1] == "0" {
@@ -25,18 +25,24 @@ func uploadLog() {
 			continue
 		}
 
+		username, ok := CacheUuidOfUser.Get(tmp[0])
+		if !ok {
+
+			continue
+		}
+
 		total, _ := strconv.Atoi(tmp[1])
-		if v, ok := trafficMap[tmp[0]]; ok {
-			trafficMap[tmp[0]] = total + v
+		if v, ok := trafficMap[username]; ok {
+			trafficMap[username] = total + v
 		} else {
-			trafficMap[tmp[0]] = total
+			trafficMap[username] = total
 		}
 	}
 
 	// 汇总流量数据
-	for ip, v := range trafficMap {
+	for username, v := range trafficMap {
 
-		traffic = append(traffic, fmt.Sprintf("%s:%d", ip, v))
+		traffic = append(traffic, fmt.Sprintf("%s:%d", username, v))
 	}
 
 	// 账号上线IP汇总

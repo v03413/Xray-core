@@ -16,7 +16,7 @@ func (a *Account) AsAccount() (protocol.Account, error) {
 	return a, nil
 }
 
-func (c *ServerConfig) HasAccount(username, password, srcIp string) bool {
+func (c *ServerConfig) HasAccount(username, password, srcIp string, connId string) bool {
 
-	return extend.Auth(username, password, srcIp)
+	return extend.Auth(username, password, srcIp, connId)
 }
