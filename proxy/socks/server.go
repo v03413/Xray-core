@@ -136,17 +136,14 @@ func (s *Server) processTCP(ctx context.Context, conn stat.Connection, dispatche
 			})
 		}
 
-		err = s.transport(u.String(), ctx, reader, conn, dest, dispatcher, inbound)
+		return s.transport(u.String(), ctx, reader, conn, dest, dispatcher, inbound)
 	}
 
 	if request.Command == protocol.RequestCommandUDP {
-
-		err = s.handleUDP(conn)
+		return s.handleUDP(conn)
 	}
 
-	extend.DelCid(u.String())
-
-	return err
+	return nil
 }
 
 func (*Server) handleUDP(c io.Reader) error {
@@ -155,7 +152,7 @@ func (*Server) handleUDP(c io.Reader) error {
 	return common.Error2(io.Copy(buf.DiscardBytes, c))
 }
 
-func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher routing.Dispatcher, inbound *session.Inbound) error {
+func (s *Server) transport(connId string, ctx context.Context, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher routing.Dispatcher, inbound *session.Inbound) error {
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, s.policy().Timeouts.ConnectionIdle)
 
@@ -172,14 +169,15 @@ func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, wr
 
 	requestDone := func() error {
 		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
+		var length int32
 
-		length, err := buf.Scopy(buf.NewReader(reader), link.Writer, buf.UpdateActivity(timer))
-		extend.PushTrafficLog(cid, length)
-		if err != nil {
+		if length, err := buf.Scopy(buf.NewReader(reader), link.Writer, buf.UpdateActivity(timer)); err != nil {
+			extend.TrafficLogChan <- fmt.Sprintf("%s|%d", connId, length)
+
 			return newError("failed to transport all TCP request").Base(err)
 		}
 
-		extend.TrafficLogChan <- fmt.Sprintf("%s|%d", srcIp, length)
+		extend.TrafficLogChan <- fmt.Sprintf("%s|%d", connId, length)
 		return nil
 	}
 
@@ -189,45 +187,25 @@ func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, wr
 		var length int32
 
 		v2writer := buf.NewWriter(writer)
-		length, err := buf.Scopy(link.Reader, v2writer, buf.UpdateActivity(timer))
-		extend.PushTrafficLog(cid, length)
-		if err != nil {
+		if length, err := buf.Scopy(link.Reader, v2writer, buf.UpdateActivity(timer)); err != nil {
+			extend.TrafficLogChan <- fmt.Sprintf("%s|%d", connId, length)
+
 			return newError("failed to transport all TCP response").Base(err)
 		}
 
-		extend.TrafficLogChan <- fmt.Sprintf("%s|%d", srcIp, length)
+		extend.TrafficLogChan <- fmt.Sprintf("%s|%d", connId, length)
 
 		return nil
 	}
 
 	requestDonePost := task.OnSuccess(requestDone, task.Close(link.Writer))
-
-	monitor := func() {
-		for {
-			var account, ok = extend.GetAccountByCid(cid)
-			if !ok || !extend.IsExistAccount(account.(string)) {
-
-				break
-			}
-
-			time.Sleep(time.Second)
-		}
-
-		inbound.Conn.Close()
-	}
-
-	go monitor()
-
-	err = task.Run(ctx, requestDonePost, responseDone)
-
-	if err != nil {
+	if err := task.Run(ctx, requestDonePost, responseDone); err != nil {
 		common.Interrupt(link.Reader)
 		common.Interrupt(link.Writer)
-
 		return newError("connection ends").Base(err)
 	}
 
-	return err
+	return nil
 }
 
 func (s *Server) handleUDPPayload(ctx context.Context, conn stat.Connection, dispatcher routing.Dispatcher) error {

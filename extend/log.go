@@ -6,34 +6,36 @@ import (
 	"github.com/xtls/xray-core/common/errors"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
-type trafficLog struct {
-	account string
-	total   int32
-}
-
-var onlineLogChan = make(chan string, 100000)
-var trafficLogChan = make(chan trafficLog, 100000)
+var logs chan string
 
 func uploadLog() {
-	var online []string
+	var result []string
 	var traffic []string
 
 	// 各用户流量统计
-	trafficMap := make(map[interface{}]int32)
-	for len(trafficLogChan) > 0 {
-		var log = <-trafficLogChan
-		if log.total == 0 {
+	trafficMap := make(map[interface{}]int)
+	for len(TrafficLogChan) > 0 {
+		tmp := strings.Split(<-TrafficLogChan, "|")
+		if tmp[1] == "0" {
 
 			continue
 		}
 
-		if v, ok := trafficMap[log.account]; ok {
-			trafficMap[log.account] = log.total + v
+		username, ok := CacheUuidOfUser.Get(tmp[0])
+		if !ok {
+
+			continue
+		}
+
+		total, _ := strconv.Atoi(tmp[1])
+		if v, ok := trafficMap[username]; ok {
+			trafficMap[username] = total + v
 		} else {
-			trafficMap[log.account] = log.total
+			trafficMap[username] = total
 		}
 	}
 
@@ -44,18 +46,18 @@ func uploadLog() {
 	}
 
 	// 账号上线IP汇总
-	for len(onlineLogChan) != 0 {
+	for len(logs) != 0 {
 
-		online = append(online, <-onlineLogChan)
+		result = append(result, <-logs)
 	}
 
-	var unique = arrUnique(online)
+	var unique = elementUnique(result) // 去重
 	var post = fmt.Sprintf(`{"online":"%s","traffic":"%s"}`, strings.Join(unique, ","), strings.Join(traffic, ","))
-	var url = fmt.Sprintf("%sapi.php?act=upload_log&v=2", getC("api"))
+	var url = fmt.Sprintf("%sapi.php?act=upload_log&v=2", getC("extend.api"))
 
 	resp, err := http.Post(url, "application/json", strings.NewReader(post))
 	if err != nil {
-		Error("日志上报：" + err.Error())
+		Error("日志上报错误：" + err.Error())
 
 		return
 	}
@@ -63,19 +65,10 @@ func uploadLog() {
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 
-		Warning("日志上报：", err.Error())
+		Warning("日志上报错误：", err.Error())
 	} else {
 
-		Warning("日志上报：", gjson.Get(string(data), "msg"))
-	}
-}
-
-func PushTrafficLog(cid string, total int32) {
-	if account, ok := GetAccountByCid(cid); ok {
-		trafficLogChan <- trafficLog{
-			account: account.(string),
-			total:   total,
-		}
+		Warning("日志上报成功：", gjson.Get(string(data), "msg"))
 	}
 }
 
@@ -94,7 +87,8 @@ func Info(values ...interface{}) {
 	errors.New(values).AtInfo().WriteToLog()
 }
 
-func arrUnique(arr []string) (newArr []string) {
+// 元素去重
+func elementUnique(arr []string) (newArr []string) {
 	newArr = make([]string, 0)
 	for i := 0; i < len(arr); i++ {
 		repeat := false
