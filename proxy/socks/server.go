@@ -3,6 +3,7 @@ package socks
 import (
 	"context"
 	"fmt"
+	"github.com/xtls/xray-core/common/uuid"
 	"github.com/xtls/xray-core/extend"
 	"io"
 	"time"
@@ -99,9 +100,10 @@ func (s *Server) processTCP(ctx context.Context, conn stat.Connection, dispatche
 		localAddress: net.IPAddress(conn.LocalAddr().(*net.TCPAddr).IP),
 	}
 
+	u := uuid.New()
 	srcIp := inbound.Source.Address.String()
 	reader := &buf.BufferedReader{Reader: buf.NewReader(conn)}
-	request, err := svrSession.Handshake(reader, conn, srcIp)
+	request, err := svrSession.Handshake(reader, conn, srcIp, u.String())
 
 	if err != nil {
 		if inbound != nil && inbound.Source.IsValid() {
@@ -134,7 +136,7 @@ func (s *Server) processTCP(ctx context.Context, conn stat.Connection, dispatche
 			})
 		}
 
-		return s.transport(srcIp, ctx, reader, conn, dest, dispatcher, inbound)
+		return s.transport(u.String(), ctx, reader, conn, dest, dispatcher, inbound)
 	}
 
 	if request.Command == protocol.RequestCommandUDP {
@@ -150,7 +152,7 @@ func (*Server) handleUDP(c io.Reader) error {
 	return common.Error2(io.Copy(buf.DiscardBytes, c))
 }
 
-func (s *Server) transport(srcIp string, ctx context.Context, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher routing.Dispatcher, inbound *session.Inbound) error {
+func (s *Server) transport(connId string, ctx context.Context, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher routing.Dispatcher, inbound *session.Inbound) error {
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, s.policy().Timeouts.ConnectionIdle)
 
@@ -170,12 +172,12 @@ func (s *Server) transport(srcIp string, ctx context.Context, reader io.Reader, 
 		var length int32
 
 		if length, err := buf.Scopy(buf.NewReader(reader), link.Writer, buf.UpdateActivity(timer)); err != nil {
-			extend.TrafficLogChan <- fmt.Sprintf("%s|%d", srcIp, length)
+			extend.TrafficLogChan <- fmt.Sprintf("%s|%d", connId, length)
 
 			return newError("failed to transport all TCP request").Base(err)
 		}
 
-		extend.TrafficLogChan <- fmt.Sprintf("%s|%d", srcIp, length)
+		extend.TrafficLogChan <- fmt.Sprintf("%s|%d", connId, length)
 		return nil
 	}
 
@@ -186,12 +188,12 @@ func (s *Server) transport(srcIp string, ctx context.Context, reader io.Reader, 
 
 		v2writer := buf.NewWriter(writer)
 		if length, err := buf.Scopy(link.Reader, v2writer, buf.UpdateActivity(timer)); err != nil {
-			extend.TrafficLogChan <- fmt.Sprintf("%s|%d", srcIp, length)
+			extend.TrafficLogChan <- fmt.Sprintf("%s|%d", connId, length)
 
 			return newError("failed to transport all TCP response").Base(err)
 		}
 
-		extend.TrafficLogChan <- fmt.Sprintf("%s|%d", srcIp, length)
+		extend.TrafficLogChan <- fmt.Sprintf("%s|%d", connId, length)
 
 		return nil
 	}
