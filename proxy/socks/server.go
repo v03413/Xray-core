@@ -152,7 +152,7 @@ func (*Server) handleUDP(c io.Reader) error {
 	return common.Error2(io.Copy(buf.DiscardBytes, c))
 }
 
-func (s *Server) transport(connId string, ctx context.Context, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher routing.Dispatcher, inbound *session.Inbound) error {
+func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher routing.Dispatcher, inbound *session.Inbound) error {
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, s.policy().Timeouts.ConnectionIdle)
 
@@ -172,12 +172,12 @@ func (s *Server) transport(connId string, ctx context.Context, reader io.Reader,
 		var length int32
 
 		if length, err := buf.Scopy(buf.NewReader(reader), link.Writer, buf.UpdateActivity(timer)); err != nil {
-			extend.TrafficLogChan <- fmt.Sprintf("%s|%d", connId, length)
+			extend.TrafficLogChan <- fmt.Sprintf("%s|%d", cid, length)
 
 			return newError("failed to transport all TCP request").Base(err)
 		}
 
-		extend.TrafficLogChan <- fmt.Sprintf("%s|%d", connId, length)
+		extend.TrafficLogChan <- fmt.Sprintf("%s|%d", cid, length)
 		return nil
 	}
 
@@ -188,12 +188,12 @@ func (s *Server) transport(connId string, ctx context.Context, reader io.Reader,
 
 		v2writer := buf.NewWriter(writer)
 		if length, err := buf.Scopy(link.Reader, v2writer, buf.UpdateActivity(timer)); err != nil {
-			extend.TrafficLogChan <- fmt.Sprintf("%s|%d", connId, length)
+			extend.TrafficLogChan <- fmt.Sprintf("%s|%d", cid, length)
 
 			return newError("failed to transport all TCP response").Base(err)
 		}
 
-		extend.TrafficLogChan <- fmt.Sprintf("%s|%d", connId, length)
+		extend.TrafficLogChan <- fmt.Sprintf("%s|%d", cid, length)
 
 		return nil
 	}
