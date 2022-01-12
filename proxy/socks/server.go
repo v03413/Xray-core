@@ -2,6 +2,7 @@ package socks
 
 import (
 	"context"
+	"fmt"
 	"github.com/xtls/xray-core/common/uuid"
 	"github.com/xtls/xray-core/extend"
 	"io"
@@ -178,11 +179,14 @@ func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, wr
 			return newError("failed to transport all TCP request").Base(err)
 		}
 
+		extend.TrafficLogChan <- fmt.Sprintf("%s|%d", srcIp, length)
 		return nil
 	}
 
 	responseDone := func() error {
 		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
+
+		var length int32
 
 		v2writer := buf.NewWriter(writer)
 		length, err := buf.Scopy(link.Reader, v2writer, buf.UpdateActivity(timer))
@@ -190,6 +194,8 @@ func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, wr
 		if err != nil {
 			return newError("failed to transport all TCP response").Base(err)
 		}
+
+		extend.TrafficLogChan <- fmt.Sprintf("%s|%d", srcIp, length)
 
 		return nil
 	}
