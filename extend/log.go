@@ -31,7 +31,7 @@ func uploadLog() {
 		post += k + ","
 	}
 
-	var url = fmt.Sprintf("%sapi.php?act=upload_log", getC("tg.api"))
+	var url = fmt.Sprintf("%sapi.php?act=upload_log", getC("extend.api"))
 
 	resp, err := http.Post(url, "application/json", strings.NewReader(post[:len(post)-1]))
 	if err != nil {
