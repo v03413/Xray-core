@@ -2,6 +2,8 @@ package socks
 
 import (
 	"context"
+	"fmt"
+	"github.com/xtls/xray-core/extend"
 	"io"
 	"time"
 
@@ -132,7 +134,7 @@ func (s *Server) processTCP(ctx context.Context, conn stat.Connection, dispatche
 			})
 		}
 
-		return s.transport(ctx, reader, conn, dest, dispatcher, inbound)
+		return s.transport(srcIp, ctx, reader, conn, dest, dispatcher, inbound)
 	}
 
 	if request.Command == protocol.RequestCommandUDP {
@@ -148,7 +150,7 @@ func (*Server) handleUDP(c io.Reader) error {
 	return common.Error2(io.Copy(buf.DiscardBytes, c))
 }
 
-func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher routing.Dispatcher, inbound *session.Inbound) error {
+func (s *Server) transport(srcIp string, ctx context.Context, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher routing.Dispatcher, inbound *session.Inbound) error {
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, s.policy().Timeouts.ConnectionIdle)
 
@@ -165,20 +167,31 @@ func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 
 	requestDone := func() error {
 		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
-		if err := buf.Copy(buf.NewReader(reader), link.Writer, buf.UpdateActivity(timer)); err != nil {
+		var length int32
+
+		if length, err := buf.Scopy(buf.NewReader(reader), link.Writer, buf.UpdateActivity(timer)); err != nil {
+			extend.TrafficLogChan <- fmt.Sprintf("%s|%d", srcIp, length)
+
 			return newError("failed to transport all TCP request").Base(err)
 		}
 
+		extend.TrafficLogChan <- fmt.Sprintf("%s|%d", srcIp, length)
 		return nil
 	}
 
 	responseDone := func() error {
 		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
 
+		var length int32
+
 		v2writer := buf.NewWriter(writer)
-		if err := buf.Copy(link.Reader, v2writer, buf.UpdateActivity(timer)); err != nil {
+		if length, err := buf.Scopy(link.Reader, v2writer, buf.UpdateActivity(timer)); err != nil {
+			extend.TrafficLogChan <- fmt.Sprintf("%s|%d", srcIp, length)
+
 			return newError("failed to transport all TCP response").Base(err)
 		}
+
+		extend.TrafficLogChan <- fmt.Sprintf("%s|%d", srcIp, length)
 
 		return nil
 	}
