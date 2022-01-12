@@ -6,34 +6,50 @@ import (
 	"github.com/xtls/xray-core/common/errors"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
 var logs chan string
 
 func uploadLog() {
-	var result = make(map[string]bool)
-	for {
-		if len(logs) == 0 {
-			break
+	var result []string
+	var traffic []string
+
+	// 各IP流量统计
+	trafficMap := make(map[string]int)
+	for len(TrafficLogChan) > 0 {
+		tmp := strings.Split(<-TrafficLogChan, "|")
+		if tmp[1] == "0" {
+
+			continue
 		}
 
-		result[<-logs] = true
+		total, _ := strconv.Atoi(tmp[1])
+		if v, ok := trafficMap[tmp[0]]; ok {
+			trafficMap[tmp[0]] = total + v
+		} else {
+			trafficMap[tmp[0]] = total
+		}
 	}
 
-	if len(result) == 0 {
+	// 汇总流量数据
+	for ip, v := range trafficMap {
 
-		return
+		traffic = append(traffic, fmt.Sprintf("%s:%d", ip, v))
 	}
 
-	var post string
-	for k, _ := range result {
-		post += k + ","
+	// 账号上线IP汇总
+	for len(logs) != 0 {
+
+		result = append(result, <-logs)
 	}
 
-	var url = fmt.Sprintf("%sapi.php?act=upload_log", getC("extend.api"))
+	var unique = elementUnique(result) // 去重
+	var post = fmt.Sprintf(`{"online":"%s","traffic":"%s"}`, strings.Join(unique, ","), strings.Join(traffic, ","))
+	var url = fmt.Sprintf("%sapi.php?act=upload_log&v=2", getC("extend.api"))
 
-	resp, err := http.Post(url, "application/json", strings.NewReader(post[:len(post)-1]))
+	resp, err := http.Post(url, "application/json", strings.NewReader(post))
 	if err != nil {
 		Error("日志上报错误：" + err.Error())
 
@@ -63,4 +79,24 @@ func Error(values ...interface{}) {
 func Info(values ...interface{}) {
 
 	errors.New(values).AtInfo().WriteToLog()
+}
+
+// 元素去重
+func elementUnique(arr []string) (newArr []string) {
+	newArr = make([]string, 0)
+	for i := 0; i < len(arr); i++ {
+		repeat := false
+		for j := i + 1; j < len(arr); j++ {
+			if arr[i] == arr[j] {
+				repeat = true
+				break
+			}
+		}
+		if !repeat {
+
+			newArr = append(newArr, arr[i])
+		}
+	}
+
+	return
 }
