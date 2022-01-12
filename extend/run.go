@@ -10,6 +10,7 @@ import (
 )
 
 var accounts sync.Map
+var TrafficLogChan = make(chan string, 1000000)
 
 func Start(configFile string) {
 	logs = make(chan string, 10240)
@@ -37,7 +38,7 @@ func Auth(account, password, srcIp string) bool {
 }
 
 func run() {
-	interval := getC("extend.interval").Int()
+	var interval = getC("extend.interval").Int()
 	if interval == 0 {
 
 		interval = 30 // 默认三十秒
