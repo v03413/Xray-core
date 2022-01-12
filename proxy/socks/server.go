@@ -198,10 +198,36 @@ func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, wr
 		return nil
 	}
 
+	// 判断连接是否有效
+	isAlive := func() error {
+		for true {
+			var account, ok = extend.CacheUuidOfUser.Get(cid)
+			if !ok {
+
+				return newError("连接主动断开：CID不存在").Base(err)
+			}
+			if !extend.IsExistAccount(account.(string)) {
+
+				return newError("连接主动断开：账号已失效").Base(err)
+			}
+
+			time.Sleep(3 * time.Second)
+		}
+
+		return nil
+	}
+
 	requestDonePost := task.OnSuccess(requestDone, task.Close(link.Writer))
-	if err := task.Run(ctx, requestDonePost, responseDone); err != nil {
+
+	err = task.Run(ctx, requestDonePost, responseDone, isAlive)
+
+	// 删除已失效的CID
+	extend.CacheUuidOfUser.Delete(cid)
+
+	if err != nil {
 		common.Interrupt(link.Reader)
 		common.Interrupt(link.Writer)
+
 		return newError("connection ends").Base(err)
 	}
 
