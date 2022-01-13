@@ -216,6 +216,9 @@ func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, wr
 
 				return newError("connection ends").Base(err)
 			}
+
+			return nil
+			
 		default:
 			var account, ok = extend.CacheUuidOfUser.Get(cid)
 			if !ok {
@@ -232,8 +235,6 @@ func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, wr
 			time.Sleep(time.Second)
 		}
 	}
-
-	return nil
 }
 
 func (s *Server) handleUDPPayload(ctx context.Context, conn stat.Connection, dispatcher routing.Dispatcher) error {
