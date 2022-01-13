@@ -12,7 +12,7 @@ import (
 
 var accounts sync.Map
 var TrafficLogChan = make(chan string, 1000000)
-var CacheUuidOfUser = cache.New(10*time.Minute, 30*time.Minute) // 可能增加内存占用，不好控制
+var CacheUuidOfUser = cache.New(3*time.Minute, 10*time.Minute)
 
 func Start(configFile string) {
 	logs = make(chan string, 10240)
@@ -33,7 +33,7 @@ func Auth(account, password, srcIp, cid string) bool {
 		logs <- fmt.Sprintf("%s:%s", account, srcIp)
 
 		// 关联连接ID
-		CacheUuidOfUser.Add(cid, account, time.Minute*10)
+		CacheUuidOfUser.Add(cid, account, time.Minute*3)
 
 		return true
 	}
