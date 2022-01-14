@@ -9,7 +9,8 @@ require (
 	github.com/google/go-cmp v0.5.6
 	github.com/gorilla/websocket v1.4.2
 	github.com/lucas-clemente/quic-go v0.24.0
-	github.com/miekg/dns v1.1.43
+	github.com/miekg/dns v1.1.45
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pelletier/go-toml v1.9.4
 	github.com/pires/go-proxyproto v0.6.1
 	github.com/refraction-networking/utls v1.0.0
