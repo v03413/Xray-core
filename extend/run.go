@@ -25,7 +25,6 @@ func run() {
 	for i := 0; ; i++ {
 		getAccounts()
 		uploadLog()
-		cacheCidOfUser.DeleteExpired()
 
 		time.Sleep(time.Second * time.Duration(interval))
 	}

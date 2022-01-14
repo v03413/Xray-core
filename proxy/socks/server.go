@@ -3,7 +3,6 @@ package socks
 import (
 	"context"
 	"fmt"
-	"github.com/xtls/xray-core/common/errors"
 	"github.com/xtls/xray-core/common/uuid"
 	"github.com/xtls/xray-core/extend"
 	"io"
@@ -137,14 +136,17 @@ func (s *Server) processTCP(ctx context.Context, conn stat.Connection, dispatche
 			})
 		}
 
-		return s.transport(u.String(), ctx, reader, conn, dest, dispatcher, inbound)
+		err = s.transport(u.String(), ctx, reader, conn, dest, dispatcher, inbound)
 	}
 
 	if request.Command == protocol.RequestCommandUDP {
-		return s.handleUDP(conn)
+
+		err = s.handleUDP(conn)
 	}
 
-	return nil
+	extend.DelCid(u.String())
+
+	return err
 }
 
 func (*Server) handleUDP(c io.Reader) error {
@@ -199,41 +201,34 @@ func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, wr
 		return nil
 	}
 
-	forceInterrupt := func() {
-		common.Interrupt(link.Reader)
-		common.Interrupt(link.Writer)
-		extend.DelCid(cid)
-	}
-
 	requestDonePost := task.OnSuccess(requestDone, task.Close(link.Writer))
 
-	c := make(chan error)
-	for {
-		select {
-		case c <- task.Run(ctx, requestDonePost, responseDone):
-			if <-c != nil {
-				forceInterrupt()
-
-				return newError("connection ends").Base(err)
-			}
-
-			return nil
-		default:
+	monitor := func() {
+		for {
 			var account, ok = extend.GetAccountByCid(cid)
-			if !ok {
-				forceInterrupt()
+			if !ok || !extend.IsExistAccount(account.(string)) {
 
-				return newError("连接主动断开").Base(errors.New("CID不存在"))
-			}
-			if !extend.IsExistAccount(account.(string)) {
-				forceInterrupt()
-
-				return newError("连接主动断开").Base(errors.New("账号已失效"))
+				break
 			}
 
 			time.Sleep(time.Second)
 		}
+
+		inbound.Conn.Close()
 	}
+
+	go monitor()
+
+	err = task.Run(ctx, requestDonePost, responseDone)
+
+	if err != nil {
+		common.Interrupt(link.Reader)
+		common.Interrupt(link.Writer)
+
+		return newError("connection ends").Base(err)
+	}
+
+	return err
 }
 
 func (s *Server) handleUDPPayload(ctx context.Context, conn stat.Connection, dispatcher routing.Dispatcher) error {
