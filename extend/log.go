@@ -18,14 +18,14 @@ func uploadLog() {
 
 	// 各用户流量统计
 	trafficMap := make(map[interface{}]int)
-	for len(TrafficLogChan) > 0 {
-		tmp := strings.Split(<-TrafficLogChan, "|")
+	for len(trafficLogChan) > 0 {
+		tmp := strings.Split(<-trafficLogChan, "|")
 		if tmp[1] == "0" {
 
 			continue
 		}
 
-		username, ok := CacheUuidOfUser.Get(tmp[0])
+		username, ok := cacheCidOfUser.Get(tmp[0])
 		if !ok {
 
 			continue
