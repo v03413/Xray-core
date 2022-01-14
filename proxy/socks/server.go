@@ -171,31 +171,25 @@ func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, wr
 
 	requestDone := func() error {
 		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
-		var length int32
 
-		if length, err := buf.Scopy(buf.NewReader(reader), link.Writer, buf.UpdateActivity(timer)); err != nil {
-			extend.PushTrafficLog(cid, length)
-
+		length, err := buf.Scopy(buf.NewReader(reader), link.Writer, buf.UpdateActivity(timer))
+		extend.PushTrafficLog(cid, length)
+		if err != nil {
 			return newError("failed to transport all TCP request").Base(err)
 		}
 
-		extend.PushTrafficLog(cid, length)
 		return nil
 	}
 
 	responseDone := func() error {
 		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
 
-		var length int32
-
 		v2writer := buf.NewWriter(writer)
-		if length, err := buf.Scopy(link.Reader, v2writer, buf.UpdateActivity(timer)); err != nil {
-			extend.PushTrafficLog(cid, length)
-
+		length, err := buf.Scopy(link.Reader, v2writer, buf.UpdateActivity(timer))
+		extend.PushTrafficLog(cid, length)
+		if err != nil {
 			return newError("failed to transport all TCP response").Base(err)
 		}
-
-		extend.PushTrafficLog(cid, length)
 
 		return nil
 	}
