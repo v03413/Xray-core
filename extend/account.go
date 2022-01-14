@@ -61,5 +61,8 @@ func getAccounts() {
 		userList.Set(user, pass, cache.NoExpiration)
 	}
 
+	// 刷新本地连接
+	refreshCid()
+
 	Warning(fmt.Sprintf("账号数量：%d 连接数量：%d", total, cacheCidOfUser.ItemCount()))
 }
