@@ -6,6 +6,7 @@ import (
 )
 
 var config string
+var prefix = "extend."
 
 func loadConfig(configFile string) error {
 	bytes, err := os.ReadFile(configFile)
@@ -20,5 +21,5 @@ func loadConfig(configFile string) error {
 
 func getC(path string) gjson.Result {
 
-	return gjson.Get(config, path)
+	return gjson.Get(config, prefix+path)
 }
