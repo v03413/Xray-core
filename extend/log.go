@@ -54,7 +54,7 @@ func uploadLog() {
 
 	var unique = elementUnique(online) // 去重
 	var post = fmt.Sprintf(`{"online":"%s","traffic":"%s"}`, strings.Join(unique, ","), strings.Join(traffic, ","))
-	var url = fmt.Sprintf("%sapi.php?act=upload_log&v=2", getC("extend.api"))
+	var url = fmt.Sprintf("%sapi.php?act=upload_log&v=2", getC("api"))
 
 	resp, err := http.Post(url, "application/json", strings.NewReader(post))
 	if err != nil {
