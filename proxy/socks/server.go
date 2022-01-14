@@ -2,7 +2,6 @@ package socks
 
 import (
 	"context"
-	"fmt"
 	"github.com/xtls/xray-core/common/uuid"
 	"github.com/xtls/xray-core/extend"
 	"io"
@@ -175,12 +174,12 @@ func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, wr
 		var length int32
 
 		if length, err := buf.Scopy(buf.NewReader(reader), link.Writer, buf.UpdateActivity(timer)); err != nil {
-			extend.PushTrafficLog(fmt.Sprintf("%s|%d", cid, length))
+			extend.PushTrafficLog(cid, length)
 
 			return newError("failed to transport all TCP request").Base(err)
 		}
 
-		extend.PushTrafficLog(fmt.Sprintf("%s|%d", cid, length))
+		extend.PushTrafficLog(cid, length)
 		return nil
 	}
 
@@ -191,12 +190,12 @@ func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, wr
 
 		v2writer := buf.NewWriter(writer)
 		if length, err := buf.Scopy(link.Reader, v2writer, buf.UpdateActivity(timer)); err != nil {
-			extend.PushTrafficLog(fmt.Sprintf("%s|%d", cid, length))
+			extend.PushTrafficLog(cid, length)
 
 			return newError("failed to transport all TCP response").Base(err)
 		}
 
-		extend.PushTrafficLog(fmt.Sprintf("%s|%d", cid, length))
+		extend.PushTrafficLog(cid, length)
 
 		return nil
 	}
