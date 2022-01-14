@@ -35,7 +35,7 @@ func IsExistAccount(account string) bool {
 }
 
 func getAccounts() {
-	var url = fmt.Sprintf("%sapi.php?act=get_user&token=%s&sid=%s", getC("extend.api"), getC("extend.key"), getC("extend.sid"))
+	var url = fmt.Sprintf("%sapi.php?act=get_user&token=%s&sid=%s", getC("api"), getC("key"), getC("sid"))
 
 	resp, err := http.Get(url)
 	if err != nil {
