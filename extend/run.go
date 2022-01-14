@@ -23,8 +23,9 @@ func run() {
 	}
 
 	for i := 0; ; i++ {
-		getAccounts()
+		// 先传日志，再获取账号，顺序不能错
 		uploadLog()
+		getAccounts()
 
 		time.Sleep(time.Second * time.Duration(interval))
 	}
