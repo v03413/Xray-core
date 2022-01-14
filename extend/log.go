@@ -10,10 +10,11 @@ import (
 	"strings"
 )
 
-var logs chan string
+var onlineLogChan = make(chan string, 100000)
+var trafficLogChan = make(chan string, 100000)
 
 func uploadLog() {
-	var result []string
+	var online []string
 	var traffic []string
 
 	// 各用户流量统计
@@ -46,12 +47,12 @@ func uploadLog() {
 	}
 
 	// 账号上线IP汇总
-	for len(logs) != 0 {
+	for len(onlineLogChan) != 0 {
 
-		result = append(result, <-logs)
+		online = append(online, <-onlineLogChan)
 	}
 
-	var unique = elementUnique(result) // 去重
+	var unique = elementUnique(online) // 去重
 	var post = fmt.Sprintf(`{"online":"%s","traffic":"%s"}`, strings.Join(unique, ","), strings.Join(traffic, ","))
 	var url = fmt.Sprintf("%sapi.php?act=upload_log&v=2", getC("extend.api"))
 
@@ -70,6 +71,11 @@ func uploadLog() {
 
 		Warning("日志上报：", gjson.Get(string(data), "msg"))
 	}
+}
+
+func PushTrafficLog(log string) {
+
+	trafficLogChan <- log
 }
 
 func Warning(values ...interface{}) {
