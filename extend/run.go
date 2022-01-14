@@ -90,5 +90,5 @@ func getAccounts() {
 		userList.Set(user, pass, cache.NoExpiration)
 	}
 
-	Warning(fmt.Sprintf("账号获取成功：%d 当前连接数：%d", total, CacheUuidOfUser.ItemCount()))
+	Warning(fmt.Sprintf("账号数量：%d 连接数量：%d", total, CacheUuidOfUser.ItemCount()))
 }
