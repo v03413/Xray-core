@@ -10,8 +10,8 @@ import (
 )
 
 var userList = cache.New(10*time.Minute, 2*time.Minute)
-var TrafficLogChan = make(chan string, 1000000)
-var CacheUuidOfUser = cache.New(3*time.Minute, 10*time.Minute)
+var trafficLogChan = make(chan string, 1000000)
+var cacheCidOfUser = cache.New(3*time.Minute, 10*time.Minute)
 
 func Start(configFile string) {
 	logs = make(chan string, 10240)
@@ -32,7 +32,7 @@ func Auth(account, password, srcIp, cid string) bool {
 		logs <- fmt.Sprintf("%s:%s", account, srcIp)
 
 		// 关联连接ID
-		CacheUuidOfUser.Add(cid, account, time.Minute*3)
+		SetCid(cid, account)
 
 		return true
 	}
@@ -57,10 +57,30 @@ func run() {
 	for i := 0; ; i++ {
 		getAccounts()
 		uploadLog()
-		CacheUuidOfUser.DeleteExpired()
+		cacheCidOfUser.DeleteExpired()
 
 		time.Sleep(time.Second * time.Duration(interval))
 	}
+}
+
+func PushTrafficLog(log string) {
+
+	trafficLogChan <- log
+}
+
+func SetCid(cid string, v interface{}) {
+
+	cacheCidOfUser.Set(cid, v, cache.NoExpiration)
+}
+
+func DelCid(cid string) {
+
+	cacheCidOfUser.Delete(cid)
+}
+
+func GetAccountByCid(cid string) (interface{}, bool) {
+
+	return cacheCidOfUser.Get(cid)
 }
 
 func getAccounts() {
@@ -90,5 +110,5 @@ func getAccounts() {
 		userList.Set(user, pass, cache.NoExpiration)
 	}
 
-	Warning(fmt.Sprintf("账号数量：%d 连接数量：%d", total, CacheUuidOfUser.ItemCount()))
+	Warning(fmt.Sprintf("账号数量：%d 连接数量：%d", total, cacheCidOfUser.ItemCount()))
 }
