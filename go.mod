@@ -20,6 +20,17 @@ require (
 	github.com/sagernet/sing-shadowsocks v0.0.0-20220627234717-689e0165ef2c
 	github.com/seiflotfy/cuckoofilter v0.0.0-20220411075957-e3b120b3f5fb
 	github.com/stretchr/testify v1.8.0
+	github.com/google/go-cmp v0.5.6
+	github.com/gorilla/websocket v1.4.2
+	github.com/lucas-clemente/quic-go v0.24.0
+	github.com/miekg/dns v1.1.43
+	github.com/patrickmn/go-cache v2.1.0+incompatible
+	github.com/pelletier/go-toml v1.9.4
+	github.com/pires/go-proxyproto v0.6.1
+	github.com/refraction-networking/utls v1.0.0
+	github.com/seiflotfy/cuckoofilter v0.0.0-20201222105146-bc6005554a0c
+	github.com/stretchr/testify v1.7.0
+	github.com/tidwall/gjson v1.12.1
 	github.com/v2fly/ss-bloomring v0.0.0-20210312155135-28617310f63e
 	github.com/xtls/go v0.0.0-20210920065950-d4af136d3672
 	go.starlark.net v0.0.0-20220328144851-d1966c6b9fcd
@@ -43,7 +54,6 @@ require (
 	github.com/marten-seemann/qtls-go1-19 v0.1.0-beta.1 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
-	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/riobard/go-bloom v0.0.0-20200614022211-cdc8013cb5b3 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
