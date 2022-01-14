@@ -16,7 +16,7 @@ func Start(configFile string) {
 }
 
 func run() {
-	var interval = getC("extend.interval").Int()
+	var interval = getC("interval").Int()
 	if interval == 0 {
 
 		interval = 30 // 默认三十秒
