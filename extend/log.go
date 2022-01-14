@@ -6,37 +6,34 @@ import (
 	"github.com/xtls/xray-core/common/errors"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
+type trafficLog struct {
+	account string
+	total   int32
+}
+
 var onlineLogChan = make(chan string, 100000)
-var trafficLogChan = make(chan string, 100000)
+var trafficLogChan = make(chan trafficLog, 100000)
 
 func uploadLog() {
 	var online []string
 	var traffic []string
 
 	// 各用户流量统计
-	trafficMap := make(map[interface{}]int)
+	trafficMap := make(map[interface{}]int32)
 	for len(trafficLogChan) > 0 {
-		tmp := strings.Split(<-trafficLogChan, "|")
-		if tmp[1] == "0" {
+		var log = <-trafficLogChan
+		if log.total == 0 {
 
 			continue
 		}
 
-		username, ok := cacheCidOfUser.Get(tmp[0])
-		if !ok {
-
-			continue
-		}
-
-		total, _ := strconv.Atoi(tmp[1])
-		if v, ok := trafficMap[username]; ok {
-			trafficMap[username] = total + v
+		if v, ok := trafficMap[log.account]; ok {
+			trafficMap[log.account] = log.total + v
 		} else {
-			trafficMap[username] = total
+			trafficMap[log.account] = log.total
 		}
 	}
 
@@ -52,7 +49,7 @@ func uploadLog() {
 		online = append(online, <-onlineLogChan)
 	}
 
-	var unique = elementUnique(online) // 去重
+	var unique = arrUnique(online)
 	var post = fmt.Sprintf(`{"online":"%s","traffic":"%s"}`, strings.Join(unique, ","), strings.Join(traffic, ","))
 	var url = fmt.Sprintf("%sapi.php?act=upload_log&v=2", getC("api"))
 
@@ -73,9 +70,13 @@ func uploadLog() {
 	}
 }
 
-func PushTrafficLog(log string) {
-
-	trafficLogChan <- log
+func PushTrafficLog(cid string, total int32) {
+	if account, ok := GetAccountByCid(cid); ok {
+		trafficLogChan <- trafficLog{
+			account: account.(string),
+			total:   total,
+		}
+	}
 }
 
 func Warning(values ...interface{}) {
@@ -93,8 +94,7 @@ func Info(values ...interface{}) {
 	errors.New(values).AtInfo().WriteToLog()
 }
 
-// 元素去重
-func elementUnique(arr []string) (newArr []string) {
+func arrUnique(arr []string) (newArr []string) {
 	newArr = make([]string, 0)
 	for i := 0; i < len(arr); i++ {
 		repeat := false
