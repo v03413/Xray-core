@@ -6,11 +6,10 @@ import (
 	"github.com/tidwall/gjson"
 	"io"
 	"net/http"
-	"sync"
 	"time"
 )
 
-var accounts sync.Map
+var userList = cache.New(10*time.Minute, 2*time.Minute)
 var TrafficLogChan = make(chan string, 1000000)
 var CacheUuidOfUser = cache.New(3*time.Minute, 10*time.Minute)
 
@@ -27,7 +26,7 @@ func Start(configFile string) {
 
 // Auth 账号授权验证
 func Auth(account, password, srcIp, cid string) bool {
-	storedPassed, found := accounts.Load(account)
+	storedPassed, found := userList.Get(account)
 	if found && password == storedPassed {
 		// 记录上线日志
 		logs <- fmt.Sprintf("%s:%s", account, srcIp)
@@ -43,7 +42,7 @@ func Auth(account, password, srcIp, cid string) bool {
 
 // IsExistAccount 账号是否存在
 func IsExistAccount(account string) bool {
-	_, found := accounts.Load(account)
+	_, found := userList.Get(account)
 
 	return found
 }
@@ -81,17 +80,15 @@ func getAccounts() {
 		return
 	}
 
-	// 清空
-	accounts.Range(func(k, v interface{}) bool {
-		accounts.Delete(k)
-		return true
-	})
+	// 清空旧列表
+	userList.Flush()
 	total := int(gjson.Get(text, "total").Num)
 	for i := 0; i < total; i++ {
 		user := gjson.Get(text, fmt.Sprintf("accounts.%d.user", i)).String()
 		pass := gjson.Get(text, fmt.Sprintf("accounts.%d.pass", i)).String()
-		accounts.Store(user, pass)
+
+		userList.Set(user, pass, cache.NoExpiration)
 	}
 
-	Warning(fmt.Sprintf("账号获取成功：%d", total))
+	Warning(fmt.Sprintf("账号获取成功：%d 当前连接数：%d", total, CacheUuidOfUser.ItemCount()))
 }
