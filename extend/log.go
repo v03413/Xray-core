@@ -57,7 +57,7 @@ func uploadLog() {
 
 	resp, err := http.Post(url, "application/json", strings.NewReader(post))
 	if err != nil {
-		Error("日志上报错误：" + err.Error())
+		Error("日志上报：" + err.Error())
 
 		return
 	}
@@ -65,10 +65,10 @@ func uploadLog() {
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 
-		Warning("日志上报错误：", err.Error())
+		Warning("日志上报：", err.Error())
 	} else {
 
-		Warning("日志上报成功：", gjson.Get(string(data), "msg"))
+		Warning("日志上报：", gjson.Get(string(data), "msg"))
 	}
 }
 
