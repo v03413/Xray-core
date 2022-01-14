@@ -35,7 +35,7 @@ func IsExistAccount(account string) bool {
 }
 
 func getAccounts() {
-	var url = fmt.Sprintf("%sapi.php?act=get_user&token=%s&sid=%s", getC("api"), getC("key"), getC("sid"))
+	var url = fmt.Sprintf("%sapi.php?act=get_user&token=%s&sid=%s", getC("extend.api"), getC("extend.key"), getC("extend.sid"))
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -60,9 +60,6 @@ func getAccounts() {
 
 		userList.Set(user, pass, cache.NoExpiration)
 	}
-
-	// 刷新本地连接
-	refreshCid()
 
 	Warning(fmt.Sprintf("账号数量：%d 连接数量：%d", total, cacheCidOfUser.ItemCount()))
 }
