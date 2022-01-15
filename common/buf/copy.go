@@ -126,11 +126,19 @@ func scopyInternal(cid string, reader Reader, writer Writer, handler *copyHandle
 			}
 
 			if werr := writer.WriteMultiBuffer(buffer); werr != nil {
+				if bufLen >= 0 {
+					extend.PushTrafficLog(cid, bufLen)
+				}
+
 				return writeError{werr}
 			}
 		}
 
 		if err != nil {
+			if bufLen >= 0 {
+				extend.PushTrafficLog(cid, bufLen)
+			}
+
 			return readError{err}
 		}
 	}
