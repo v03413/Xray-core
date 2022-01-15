@@ -1,6 +1,7 @@
 package buf
 
 import (
+	"github.com/xtls/xray-core/extend"
 	"io"
 	"time"
 
@@ -95,28 +96,6 @@ func copyInternal(reader Reader, writer Writer, handler *copyHandler) error {
 	}
 }
 
-func scopyInternal(reader Reader, writer Writer, handler *copyHandler) (int32, error) {
-	var bufLen int32
-	for {
-		buffer, err := reader.ReadMultiBuffer()
-		bufLen += buffer.Len()
-
-		if !buffer.IsEmpty() {
-			for _, handler := range handler.onData {
-				handler(buffer)
-			}
-
-			if werr := writer.WriteMultiBuffer(buffer); werr != nil {
-				return bufLen, writeError{werr}
-			}
-		}
-
-		if err != nil {
-			return bufLen, readError{err}
-		}
-	}
-}
-
 // Copy dumps all payload from reader to writer or stops when an error occurs. It returns nil when EOF.
 func Copy(reader Reader, writer Writer, options ...CopyOption) error {
 	var handler copyHandler
@@ -130,22 +109,48 @@ func Copy(reader Reader, writer Writer, options ...CopyOption) error {
 	return nil
 }
 
-func Scopy(reader Reader, writer Writer, options ...CopyOption) (int32, error) {
+func scopyInternal(cid string, reader Reader, writer Writer, handler *copyHandler) error {
+	var bufLen int32
+	for {
+		buffer, err := reader.ReadMultiBuffer()
+		bufLen += buffer.Len()
+		if bufLen >= 1048576 { // 1MB
+			extend.PushTrafficLog(cid, bufLen)
+
+			bufLen = 0
+		}
+
+		if !buffer.IsEmpty() {
+			for _, handler := range handler.onData {
+				handler(buffer)
+			}
+
+			if werr := writer.WriteMultiBuffer(buffer); werr != nil {
+				return writeError{werr}
+			}
+		}
+
+		if err != nil {
+			return readError{err}
+		}
+	}
+}
+
+func Scopy(cid string, reader Reader, writer Writer, options ...CopyOption) error {
 	var handler copyHandler
-	var copyLen int32
 
 	for _, option := range options {
 
 		option(&handler)
 	}
 
-	copyLen, err := scopyInternal(reader, writer, &handler)
+	err := scopyInternal(cid, reader, writer, &handler)
 	if err != nil && errors.Cause(err) != io.EOF {
 
-		return copyLen, err
+		return err
 	}
 
-	return copyLen, nil
+	return nil
 }
 
 var ErrNotTimeoutReader = newError("not a TimeoutReader")
