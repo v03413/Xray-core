@@ -111,8 +111,6 @@ func Copy(reader Reader, writer Writer, options ...CopyOption) error {
 
 func scopyInternal(cid string, reader Reader, writer Writer, handler *copyHandler) error {
 	var bufLen int32
-	var err error
-
 	for {
 		buffer, err := reader.ReadMultiBuffer()
 		bufLen += buffer.Len()
@@ -127,20 +125,15 @@ func scopyInternal(cid string, reader Reader, writer Writer, handler *copyHandle
 				handler(buffer)
 			}
 
-			if err = writer.WriteMultiBuffer(buffer); err != nil {
-				extend.PushTrafficLog(cid, bufLen)
-
-				break
+			if werr := writer.WriteMultiBuffer(buffer); werr != nil {
+				return writeError{werr}
 			}
 		}
+
+		if err != nil {
+			return readError{err}
+		}
 	}
-
-	if bufLen >= 0 {
-
-		extend.PushTrafficLog(cid, bufLen)
-	}
-
-	return readError{err}
 }
 
 func Scopy(cid string, reader Reader, writer Writer, options ...CopyOption) error {
