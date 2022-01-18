@@ -10,8 +10,8 @@ import (
 )
 
 type trafficLog struct {
-	account string
-	total   int32
+	username string
+	total    int32
 }
 
 var onlineLogChan = make(chan string, 100000)
@@ -30,10 +30,10 @@ func uploadLog() {
 			continue
 		}
 
-		if v, ok := trafficMap[log.account]; ok {
-			trafficMap[log.account] = log.total + v
+		if v, ok := trafficMap[log.username]; ok {
+			trafficMap[log.username] = log.total + v
 		} else {
-			trafficMap[log.account] = log.total
+			trafficMap[log.username] = log.total
 		}
 	}
 
@@ -71,10 +71,10 @@ func uploadLog() {
 }
 
 func PushTrafficLog(cid string, total int32) {
-	if account, ok := GetAccountByCid(cid); ok {
+	if username, ok := GetUsernameByCid(cid); ok {
 		trafficLogChan <- trafficLog{
-			account: account.(string),
-			total:   total,
+			username: username.(string),
+			total:    total,
 		}
 	}
 }
