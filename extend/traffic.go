@@ -18,7 +18,7 @@ func deleteExpireCid() {
 	}
 }
 
-func SetCid(cid string, v interface{}) {
+func setCid(cid string, v interface{}) {
 
 	cacheCidOfUser.Set(cid, v, cache.NoExpiration)
 }

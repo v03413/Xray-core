@@ -24,7 +24,7 @@ func Auth(username, password, srcIp, cid string) bool {
 		onlineLogChan <- fmt.Sprintf("%s:%s", username, srcIp)
 
 		// 关联连接ID
-		SetCid(cid, username)
+		setCid(cid, username)
 
 		return true
 	}
