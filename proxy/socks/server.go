@@ -196,7 +196,7 @@ func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, wr
 
 	monitor := func() {
 		for {
-			var account, ok = extend.GetAccountByCid(cid)
+			var account, ok = extend.GetUsernameByCid(cid)
 			if !ok || !extend.IsExistAccount(account.(string)) {
 
 				break

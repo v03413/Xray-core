@@ -7,7 +7,7 @@ import (
 
 var cacheCidOfUser = cache.New(3*time.Minute, 10*time.Minute)
 
-func refreshCid() {
+func deleteExpireCid() {
 	cacheCidOfUser.DeleteExpired()
 
 	for cid, v := range cacheCidOfUser.Items() {
@@ -28,7 +28,7 @@ func DelCid(cid string) {
 	cacheCidOfUser.Delete(cid)
 }
 
-func GetAccountByCid(cid string) (interface{}, bool) {
+func GetUsernameByCid(cid string) (interface{}, bool) {
 
 	return cacheCidOfUser.Get(cid)
 }
