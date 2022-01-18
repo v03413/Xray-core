@@ -116,6 +116,7 @@ func scopyInternal(cid string, reader Reader, writer Writer, handler *copyHandle
 		bufLen += buffer.Len()
 		if bufLen >= 1048576 { // 1MB
 			extend.PushTrafficLog(cid, bufLen)
+			extend.WaitForCid(cid)
 
 			bufLen = 0
 		}
