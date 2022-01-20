@@ -2,10 +2,7 @@ package extend
 
 import (
 	"fmt"
-	"github.com/tidwall/gjson"
 	"github.com/xtls/xray-core/common/errors"
-	"io/ioutil"
-	"net/http"
 	"strings"
 )
 
@@ -17,7 +14,7 @@ type trafficLog struct {
 var onlineLogChan = make(chan string, 100000)
 var trafficLogChan = make(chan trafficLog, 100000)
 
-func uploadLog() {
+func getPostLog() string {
 	var online []string
 	var traffic []string
 
@@ -49,25 +46,7 @@ func uploadLog() {
 		online = append(online, <-onlineLogChan)
 	}
 
-	var unique = arrUnique(online)
-	var post = fmt.Sprintf(`{"online":"%s","traffic":"%s"}`, strings.Join(unique, ","), strings.Join(traffic, ","))
-	var url = fmt.Sprintf("%sapi.php?act=upload_log&v=2", getC("api"))
-
-	resp, err := http.Post(url, "application/json", strings.NewReader(post))
-	if err != nil {
-		Error("日志上报：" + err.Error())
-
-		return
-	}
-
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-
-		Warning("日志上报：", err.Error())
-	} else {
-
-		Warning("日志上报：", gjson.Get(string(data), "msg"))
-	}
+	return fmt.Sprintf(`{"online":"%s","traffic":"%s"}`, strings.Join(arrUnique(online), ","), strings.Join(traffic, ","))
 }
 
 func PushTrafficLog(cid string, total int32) {
