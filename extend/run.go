@@ -52,7 +52,7 @@ func heartbeat() {
 
 	if gjson.Get(text, "code").String() != "0" {
 
-		Warning(fmt.Sprintf("心跳错误：状态码code必须为0（%s）", gjson.Get(text, "code").String()))
+		Warning(fmt.Sprintf("心跳错误：状态码code必须为0（%s）", text))
 		return
 	}
 
