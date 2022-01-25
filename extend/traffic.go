@@ -32,3 +32,23 @@ func GetUsernameByCid(cid string) (interface{}, bool) {
 
 	return cacheCidOfUser.Get(cid)
 }
+
+func getOnlineTotal() int {
+	var arr = make([]string, 100)
+	var total = 0
+
+	for _, v := range cacheCidOfUser.Items() {
+
+		arr = append(arr, v.Object.(string))
+	}
+
+	arr = arrUnique(arr)
+	for _, v := range arr {
+		if v != "" {
+			total++
+		}
+
+	}
+
+	return total
+}
