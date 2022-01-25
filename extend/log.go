@@ -18,6 +18,9 @@ func getPostLog() string {
 	var online []string
 	var traffic []string
 
+	var id = getC("id").Int()
+	var total = getOnlineTotal()
+
 	// 各用户流量统计
 	trafficMap := make(map[interface{}]int32)
 	for len(trafficLogChan) > 0 {
@@ -46,7 +49,7 @@ func getPostLog() string {
 		online = append(online, <-onlineLogChan)
 	}
 
-	return fmt.Sprintf(`{"online":"%s","traffic":"%s"}`, strings.Join(arrUnique(online), ","), strings.Join(traffic, ","))
+	return fmt.Sprintf(`{"id":%d,"total":%d,"log":{"online":"%s","traffic":"%s"}}`, id, total, strings.Join(arrUnique(online), ","), strings.Join(traffic, ","))
 }
 
 func PushTrafficLog(cid string, total int32) {
