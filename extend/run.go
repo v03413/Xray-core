@@ -28,16 +28,15 @@ func run() {
 		interval = 30 // 默认三十秒
 	}
 
-	for i := 0; ; i++ {
-		// 先传日志，再获取账号，顺序不能错
-		heartbeat()
+	for range time.Tick(time.Second * time.Duration(interval)) {
+		// 开始心跳
 
-		time.Sleep(time.Second * time.Duration(interval))
+		heartbeat()
 	}
 }
 
 func heartbeat() {
-	var post = getPostLog()
+	var post = getStates()
 	var apiUrl = getC("api").String()
 
 	resp, err := http.Post(apiUrl, "application/json", strings.NewReader(post))

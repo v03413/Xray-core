@@ -14,12 +14,12 @@ type trafficLog struct {
 var onlineLogChan = make(chan string, 100000)
 var trafficLogChan = make(chan trafficLog, 100000)
 
-func getPostLog() string {
+func getStates() string {
 	var online []string
 	var traffic []string
 
-	var id = getC("id").Int()
-	var total = getOnlineTotal()
+	var serverId = getC("id").Int()
+	var onlineNum = getOnlineNum()
 
 	// 各用户流量统计
 	trafficMap := make(map[interface{}]int32)
@@ -49,7 +49,7 @@ func getPostLog() string {
 		online = append(online, <-onlineLogChan)
 	}
 
-	return fmt.Sprintf(`{"id":%d,"total":%d,"log":{"online":"%s","traffic":"%s"}}`, id, total, strings.Join(arrUnique(online), ","), strings.Join(traffic, ","))
+	return fmt.Sprintf(`{"id":%d,"total":%d,"log":{"online":"%s","traffic":"%s"}}`, serverId, onlineNum, strings.Join(arrUnique(online), ","), strings.Join(traffic, ","))
 }
 
 func PushTrafficLog(cid string, total int32) {

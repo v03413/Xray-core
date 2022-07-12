@@ -33,7 +33,7 @@ func GetUsernameByCid(cid string) (interface{}, bool) {
 	return cacheCidOfUser.Get(cid)
 }
 
-func getOnlineTotal() int {
+func getOnlineNum() int {
 	var arr = make([]string, 100)
 	var total = 0
 
