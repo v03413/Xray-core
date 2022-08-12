@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-var cacheCidOfUser = cache.New(3*time.Minute, 10*time.Minute)
+var cacheCidOfUser = cache.New(time.Minute, time.Second*5)
 
 func deleteExpireCid() {
 	cacheCidOfUser.DeleteExpired()
