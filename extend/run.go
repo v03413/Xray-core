@@ -22,14 +22,7 @@ func Start(configFile string) {
 }
 
 func run() {
-	var interval = getC("interval").Int()
-	if interval == 0 {
-
-		interval = 30 // 默认三十秒
-	}
-
-	for range time.Tick(time.Second * time.Duration(interval)) {
-		// 开始心跳
+	for range time.Tick(time.Second * 5) {
 
 		heartbeat()
 	}
@@ -78,11 +71,8 @@ func heartbeat() {
 		setProxyRate(user, rate.Limit(rateLimit))
 	}
 
-	// 删除失效连接
-	deleteExpireCid()
-
 	// 删除失效限速器
 	deleteExpireLimiter()
 
-	Warning(fmt.Sprintf("代理数:%s 连接数:%d 「%s」", total, cacheCidOfUser.ItemCount(), msg))
+	Warning(fmt.Sprintf("代理数:%s 「%s」", total, msg))
 }

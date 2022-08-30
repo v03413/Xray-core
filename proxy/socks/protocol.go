@@ -93,7 +93,7 @@ func (s *ServerSession) handshake4(cmd byte, reader io.Reader, writer io.Writer)
 	}
 }
 
-func (s *ServerSession) auth5(nMethod byte, reader io.Reader, writer io.Writer, srcIp string, cid string) (username string, err error) {
+func (s *ServerSession) auth5(nMethod byte, reader io.Reader, writer io.Writer, srcIp string) (username string, err error) {
 	buffer := buf.StackNew()
 	defer buffer.Release()
 
@@ -121,7 +121,7 @@ func (s *ServerSession) auth5(nMethod byte, reader io.Reader, writer io.Writer, 
 			return "", newError("failed to read username and password for authentication").Base(err)
 		}
 
-		if !s.config.HasAccount(username, password, srcIp, cid) {
+		if !s.config.HasAccount(username, password, srcIp) {
 			// 验证失败
 			writeSocks5AuthenticationResponse(writer, 0x01, 0xFF)
 			return "", newError("invalid username or password")
@@ -136,12 +136,13 @@ func (s *ServerSession) auth5(nMethod byte, reader io.Reader, writer io.Writer, 
 	return "", nil
 }
 
-func (s *ServerSession) handshake5(nMethod byte, reader io.Reader, writer io.Writer, srcIp string, cid string) (*protocol.RequestHeader, error) {
+func (s *ServerSession) handshake5(nMethod byte, reader io.Reader, writer io.Writer, srcIp string) (*protocol.RequestHeader, error) {
 	var (
 		username string
 		err      error
 	)
-	if username, err = s.auth5(nMethod, reader, writer, srcIp, cid); err != nil {
+	if username, err = s.auth5(nMethod, reader, writer, srcIp); err != nil {
+
 		return nil, err
 	}
 
@@ -207,7 +208,7 @@ func (s *ServerSession) handshake5(nMethod byte, reader io.Reader, writer io.Wri
 }
 
 // Handshake performs a Socks4/4a/5 handshake.
-func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer, srcIp string, cid string) (*protocol.RequestHeader, error) {
+func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer, srcIp string) (*protocol.RequestHeader, error) {
 	buffer := buf.StackNew()
 	if _, err := buffer.ReadFullFrom(reader, 2); err != nil {
 		buffer.Release()
@@ -222,7 +223,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer, srcIp stri
 	case socks4Version:
 		return s.handshake4(cmd, reader, writer)
 	case socks5Version:
-		return s.handshake5(cmd, reader, writer, srcIp, cid)
+		return s.handshake5(cmd, reader, writer, srcIp)
 	default:
 		return nil, newError("unknown Socks version: ", version)
 	}

@@ -13,9 +13,8 @@ type limit struct {
 
 var limiters = &sync.Map{}
 
-func WaitForCid(cid string) {
-	if username, ok := GetUsernameByCid(cid); ok {
-		itm, _ := limiters.Load(username)
+func WaitForUsername(username string) {
+	if itm, ok := limiters.Load(username); ok {
 
 		itm.(*limit).limiter.Wait(context.Background())
 	}
@@ -31,8 +30,6 @@ func setProxyRate(account string, size rate.Limit) {
 
 		return
 	}
-
-	// 速率未发生变化
 }
 
 func deleteExpireLimiter() {

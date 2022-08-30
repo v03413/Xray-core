@@ -2,8 +2,6 @@ package socks
 
 import (
 	"context"
-	"github.com/xtls/xray-core/common/uuid"
-	"github.com/xtls/xray-core/extend"
 	"io"
 	"time"
 
@@ -99,10 +97,9 @@ func (s *Server) processTCP(ctx context.Context, conn stat.Connection, dispatche
 		localAddress: net.IPAddress(conn.LocalAddr().(*net.TCPAddr).IP),
 	}
 
-	u := uuid.New()
 	srcIp := inbound.Source.Address.String()
 	reader := &buf.BufferedReader{Reader: buf.NewReader(conn)}
-	request, err := svrSession.Handshake(reader, conn, srcIp, u.String())
+	request, err := svrSession.Handshake(reader, conn, srcIp)
 
 	if err != nil {
 		if inbound != nil && inbound.Source.IsValid() {
@@ -135,15 +132,13 @@ func (s *Server) processTCP(ctx context.Context, conn stat.Connection, dispatche
 			})
 		}
 
-		err = s.transport(u.String(), ctx, reader, conn, dest, dispatcher, inbound)
+		err = s.transport(request.User.Email, ctx, reader, conn, dest, dispatcher, inbound)
 	}
 
 	if request.Command == protocol.RequestCommandUDP {
 
 		err = s.handleUDP(conn)
 	}
-
-	extend.DelCid(u.String())
 
 	return err
 }
@@ -154,7 +149,7 @@ func (*Server) handleUDP(c io.Reader) error {
 	return common.Error2(io.Copy(buf.DiscardBytes, c))
 }
 
-func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher routing.Dispatcher, inbound *session.Inbound) error {
+func (s *Server) transport(username string, ctx context.Context, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher routing.Dispatcher, inbound *session.Inbound) error {
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, s.policy().Timeouts.ConnectionIdle)
 
@@ -172,7 +167,7 @@ func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, wr
 	requestDone := func() error {
 		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
 
-		err := buf.Scopy(cid, buf.NewReader(reader), link.Writer, buf.UpdateActivity(timer))
+		err := buf.Scopy(username, buf.NewReader(reader), link.Writer, buf.UpdateActivity(timer))
 		if err != nil {
 			return newError("failed to transport all TCP request").Base(err)
 		}
@@ -184,7 +179,7 @@ func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, wr
 		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
 
 		v2writer := buf.NewWriter(writer)
-		err := buf.Scopy(cid, link.Reader, v2writer, buf.UpdateActivity(timer))
+		err := buf.Scopy(username, link.Reader, v2writer, buf.UpdateActivity(timer))
 		if err != nil {
 			return newError("failed to transport all TCP response").Base(err)
 		}
@@ -194,25 +189,7 @@ func (s *Server) transport(cid string, ctx context.Context, reader io.Reader, wr
 
 	requestDonePost := task.OnSuccess(requestDone, task.Close(link.Writer))
 
-	monitor := func() {
-		for {
-			var account, ok = extend.GetUsernameByCid(cid)
-			if !ok || !extend.IsExistAccount(account.(string)) {
-
-				break
-			}
-
-			time.Sleep(time.Second)
-		}
-
-		inbound.Conn.Close()
-	}
-
-	go monitor()
-
-	err = task.Run(ctx, requestDonePost, responseDone)
-
-	if err != nil {
+	if err = task.Run(ctx, requestDonePost, responseDone); err != nil {
 		common.Interrupt(link.Reader)
 		common.Interrupt(link.Writer)
 

@@ -18,8 +18,7 @@ func getStates() string {
 	var online []string
 	var traffic []string
 
-	var serverId = getC("id").Int()
-	var onlineNum = getOnlineNum()
+	var realtimeOnline = recent.ItemCount()
 
 	// 各用户流量统计
 	trafficMap := make(map[interface{}]int32)
@@ -49,15 +48,13 @@ func getStates() string {
 		online = append(online, <-onlineLogChan)
 	}
 
-	return fmt.Sprintf(`{"id":%d,"total":%d,"log":{"online":"%s","traffic":"%s"}}`, serverId, onlineNum, strings.Join(arrUnique(online), ","), strings.Join(traffic, ","))
+	return fmt.Sprintf(`{"realtime_online":%d,"log":{"online":"%s","traffic":"%s"}}`, realtimeOnline, strings.Join(arrUnique(online), ","), strings.Join(traffic, ","))
 }
 
-func PushTrafficLog(cid string, total int32) {
-	if username, ok := GetUsernameByCid(cid); ok {
-		trafficLogChan <- trafficLog{
-			username: username.(string),
-			total:    total,
-		}
+func PushTrafficLog(username string, total int32) {
+	trafficLogChan <- trafficLog{
+		username: username,
+		total:    total,
 	}
 }
 
@@ -69,11 +66,6 @@ func Warning(values ...interface{}) {
 func Error(values ...interface{}) {
 
 	errors.New(values).AtError().WriteToLog()
-}
-
-func Info(values ...interface{}) {
-
-	errors.New(values).AtInfo().WriteToLog()
 }
 
 func arrUnique(arr []string) (newArr []string) {

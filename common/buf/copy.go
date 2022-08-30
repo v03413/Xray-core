@@ -109,43 +109,43 @@ func Copy(reader Reader, writer Writer, options ...CopyOption) error {
 	return nil
 }
 
-func scopyInternal(cid string, reader Reader, writer Writer, handler *copyHandler) error {
-	var bufLen int32
+func scopyInternal(username string, reader Reader, writer Writer, handler *copyHandler) error {
+	var mb int32 = 1048576 // 1MB
+	var bufLen, bufTotal, slice int32
+
 	for {
 		buffer, err := reader.ReadMultiBuffer()
-		bufLen += buffer.Len()
-		if bufLen >= 1048576 { // 1MB
-			extend.PushTrafficLog(cid, bufLen)
-			extend.WaitForCid(cid)
+		bufLen = buffer.Len()
+		slice += bufLen
+		bufTotal += bufLen
+		if slice >= mb {
+			extend.WaitForUsername(username)
 
-			bufLen = 0
+			slice = 0
 		}
 
 		if !buffer.IsEmpty() {
 			for _, handler := range handler.onData {
+
 				handler(buffer)
 			}
 
-			if werr := writer.WriteMultiBuffer(buffer); werr != nil {
-				if bufLen >= 0 {
-					extend.PushTrafficLog(cid, bufLen)
-				}
+			if err := writer.WriteMultiBuffer(buffer); err != nil {
+				extend.PushTrafficLog(username, bufTotal)
 
-				return writeError{werr}
+				return writeError{err}
 			}
 		}
 
 		if err != nil {
-			if bufLen >= 0 {
-				extend.PushTrafficLog(cid, bufLen)
-			}
+			extend.PushTrafficLog(username, bufTotal)
 
 			return readError{err}
 		}
 	}
 }
 
-func Scopy(cid string, reader Reader, writer Writer, options ...CopyOption) error {
+func Scopy(username string, reader Reader, writer Writer, options ...CopyOption) error {
 	var handler copyHandler
 
 	for _, option := range options {
@@ -153,7 +153,7 @@ func Scopy(cid string, reader Reader, writer Writer, options ...CopyOption) erro
 		option(&handler)
 	}
 
-	err := scopyInternal(cid, reader, writer, &handler)
+	err := scopyInternal(username, reader, writer, &handler)
 	if err != nil && errors.Cause(err) != io.EOF {
 
 		return err
