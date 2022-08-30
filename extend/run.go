@@ -3,10 +3,10 @@ package extend
 import (
 	"fmt"
 	"github.com/patrickmn/go-cache"
-	"github.com/tidwall/gjson"
 	"golang.org/x/time/rate"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -49,7 +49,13 @@ func heartbeat() {
 	bytes, _ := io.ReadAll(resp.Body)
 	text := string(bytes)
 
-	if gjson.Get(text, "code").String() != "0" {
+	var data = strings.Split(text, "\n")
+	var code = data[0]
+	var msg = data[1]
+	var total = data[2]
+	var list = strings.Split(data[3], "|")
+
+	if code != "0" {
 
 		Warning(fmt.Sprintf("心跳错误：状态码code必须为0（%s）", text))
 		return
@@ -57,11 +63,12 @@ func heartbeat() {
 
 	// 清空旧列表
 	pList.Flush()
-	total := int(gjson.Get(text, "total").Num)
-	for i := 0; i < total; i++ {
-		user := gjson.Get(text, fmt.Sprintf("list.%d.user", i)).String()
-		pass := gjson.Get(text, fmt.Sprintf("list.%d.pass", i)).String()
-		rateLimit := gjson.Get(text, fmt.Sprintf("list.%d.rate", i)).Float()
+	for _, v := range list {
+		var tmp = strings.Split(v, ":")
+
+		user := tmp[0]
+		pass := tmp[1]
+		rateLimit, _ := strconv.ParseFloat(tmp[2], 64)
 		if rateLimit == 0 { // 不限速
 
 			rateLimit = 999
@@ -77,5 +84,5 @@ func heartbeat() {
 	// 删除失效限速器
 	deleteExpireLimiter()
 
-	Warning(fmt.Sprintf("代理数:%d 连接数:%d 「%s」", total, cacheCidOfUser.ItemCount(), gjson.Get(text, "msg")))
+	Warning(fmt.Sprintf("代理数:%s 连接数:%d 「%s」", total, cacheCidOfUser.ItemCount(), msg))
 }
