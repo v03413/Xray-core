@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const Version = 1.0
+const Version = 1.1
 
 func Start(configFile string) {
 	err := loadConfig(configFile)
