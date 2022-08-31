@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const Version = 1.0
+
 func Start(configFile string) {
 	err := loadConfig(configFile)
 	if err != nil {
@@ -74,5 +76,5 @@ func heartbeat() {
 	// 删除失效限速器
 	deleteExpireLimiter()
 
-	Warning(fmt.Sprintf("代理数:%s 「%s」", total, msg))
+	Warning(fmt.Sprintf("[%f]代理数:%s 「%s」", Version, total, msg))
 }

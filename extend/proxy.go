@@ -8,7 +8,7 @@ import (
 )
 
 var pList = cache.New(time.Minute, time.Minute)
-var recent = cache.New(time.Minute, time.Second)
+var recent = cache.New(time.Minute*3, time.Second)
 
 type Proxy struct {
 	rateLimit rate.Limit
