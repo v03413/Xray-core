@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const Version = "1.1"
+const Version = "1.2"
 
 var apiUrl, listenPort string
 
