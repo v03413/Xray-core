@@ -5,6 +5,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"golang.org/x/time/rate"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,12 +14,19 @@ import (
 
 const Version = "1.1"
 
+var apiUrl, listenPort string
+
 func Start(configFile string) {
 	err := loadConfig(configFile)
 	if err != nil {
 		Error(fmt.Sprintf("配置文件加载失败：[%s]%s", configFile, err.Error()))
 		return
 	}
+
+	apiUrl = getC("extend.api").String()
+	listenPort = getC("inbounds.0.port").String()
+
+	log.Println("[监听端口] ==> ", listenPort)
 
 	go run()
 }
@@ -32,7 +40,6 @@ func run() {
 
 func heartbeat() {
 	var post = getStates()
-	var apiUrl = getC("api").String()
 
 	resp, err := http.Post(apiUrl, "application/json", strings.NewReader(post))
 	if err != nil {

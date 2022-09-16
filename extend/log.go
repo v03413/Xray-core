@@ -3,6 +3,7 @@ package extend
 import (
 	"fmt"
 	"github.com/xtls/xray-core/common/errors"
+	"os/exec"
 	"strings"
 )
 
@@ -18,7 +19,7 @@ func getStates() string {
 	var online []string
 	var traffic []string
 
-	var realtimeOnline = recent.ItemCount()
+	var realtimeOnline = getRealtimeOnline(listenPort)
 
 	// 各用户流量统计
 	trafficMap := make(map[interface{}]int32)
@@ -85,4 +86,29 @@ func arrUnique(arr []string) (newArr []string) {
 	}
 
 	return
+}
+
+func getRealtimeOnline(port string) int {
+	cmd := exec.Command("ss", "-at", "sport", port)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+
+		Warning(err.Error())
+		return 0
+	}
+
+	var list = make(map[string]bool)
+	var text = strings.Split(strings.TrimSpace(string(out)), "\n")
+	for k, v := range text {
+		if k < 2 {
+
+			continue
+		}
+
+		fields := strings.Fields(v)
+		fields = strings.Split(fields[4], ":")
+		list[fields[3]] = true
+	}
+
+	return len(list)
 }
